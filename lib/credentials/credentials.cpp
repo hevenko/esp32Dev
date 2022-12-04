@@ -9,8 +9,9 @@
  */
 
 #include <credentials.h>
+#include <misc.h>
 
 struct sCredentials credentials = {
 	"", "", // "SSID", "PASS",
-	"Air-Q" + String(ESP.getChipId(), HEX), "5A9i0r-Q2u8a7L6i4t3y"
+	"Air-Q" + String(getChipId(), HEX), "5A9i0r-Q2u8a7L6i4t3y"
 };

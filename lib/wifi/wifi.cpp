@@ -9,8 +9,9 @@
  */
 
 #include <wifi.h>
+#include <WiFi.h>
 #include <Arduino_JSON.h>
-#include <ESP8266WiFi.h>
+
 #include <config.h>
 #include <misc.h>
 
@@ -21,18 +22,23 @@ struct sRtcData {
   uint8_t padding;   // 1 byte,  12 in total
 };
 
-sRtcData rtcData;
+RTC_DATA_ATTR sRtcData rtcData; // prefixing with RTC_DATA_ATTR to use RTC memory
 bool rtcValid = false;
 bool bSoftAP = false;
-ESP8266WebServer server(80);
+WebServer server(80);
 DNSServer dnsServer;
 
 std::map<int,String> encryptionTypes = {  
-  { ENC_TYPE_NONE, "Open" },
-  { ENC_TYPE_WEP, "WEP" },
-  { ENC_TYPE_TKIP, "WPA/PSK" },
-  { ENC_TYPE_CCMP, "WPA2/PSK" },
-  { ENC_TYPE_AUTO, "WPA/WPA2/PSK" },
+  { WIFI_AUTH_OPEN, "Open" },
+  { WIFI_AUTH_WEP, "WEP" },
+  { WIFI_AUTH_WPA_PSK, "WPA/PSK" },
+  { WIFI_AUTH_WPA2_PSK, "WPA2/PSK" },
+  { WIFI_AUTH_WPA_WPA2_PSK, "WPA/WPA2/PSK" },
+  { WIFI_AUTH_WPA2_ENTERPRISE, "WPA2/ENTERPRISE" },
+  { WIFI_AUTH_WPA3_PSK, "WPA3/PSK" },
+  { WIFI_AUTH_WPA2_WPA3_PSK, "WPA2/WPA3/PSK" },
+  { WIFI_AUTH_WAPI_PSK, "WAPI/PSK" },
+  { WIFI_AUTH_MAX, "MAX" }
 };
 
 std::map<int,String> statusTypes = {  
@@ -48,13 +54,13 @@ std::map<int,String> statusTypes = {
 
 void readRTC() {
   // Try to read WiFi settings from RTC memory
-  if(ESP.rtcUserMemoryRead(0, (uint32_t*)&rtcData, sizeof(rtcData))) {
+  //if(ESP.rtcUserMemoryRead(0, (uint32_t*)&rtcData, sizeof(rtcData))) {
     // Calculate the CRC of what we just read from RTC memory, but skip the first 4 bytes as that's the checksum itself.
     uint32_t crc = calculateCRC32(((uint8_t*)&rtcData) + 4, sizeof(rtcData) - 4);
     if(crc == rtcData.crc32) {
       rtcValid = true;
     }
-  }
+  //}
 }
 
 bool connectWifi(String ssid, String password) {
@@ -68,12 +74,14 @@ bool connectWifi(String ssid, String password) {
   readRTC();
   if(rtcValid) {
     // The RTC data was good, make a quick connection
-    Serial.println("The RTC data was good, make a quick connection");
-    WiFi.begin(ssid, password, rtcData.channel, rtcData.ap_mac, true);
+    //Serial.println("The RTC data was good, make a quick connection");
+    Serial.println("The RTC data was good, connecting");
+    //WiFi.begin(ssid, password, rtcData.channel, rtcData.ap_mac, true);
+    WiFi.begin(ssid.c_str(), password.c_str());
   } else {
     // The RTC data was not valid, so make a regular connection
     Serial.println("The RTC data was not valid, so make a regular connection");
-    WiFi.begin(ssid, password);
+    WiFi.begin(ssid.c_str(), password.c_str());
   }
 
   Serial.printf("Connecting to %s\n", ssid.c_str());
@@ -88,11 +96,7 @@ bool connectWifi(String ssid, String password) {
       // Quick connect is not working, reset WiFi and try regular connection
       WiFi.disconnect();
       delay(10);
-      WiFi.forceSleepBegin();
-      delay(10);
-      WiFi.forceSleepWake();
-      delay(10);
-      WiFi.begin(ssid, password);
+      WiFi.begin(ssid.c_str(), password.c_str());
     }
   }
   Serial.printf("\nConnection time: %lu ms\n", millis() - start);
@@ -129,7 +133,7 @@ bool connectWifi(String ssid, String password) {
   rtcData.channel = WiFi.channel();
   memcpy(rtcData.ap_mac, WiFi.BSSID(), 6); // Copy 6 bytes of BSSID (AP's MAC address)
   rtcData.crc32 = calculateCRC32(((uint8_t*)&rtcData) + 4, sizeof( rtcData ) - 4);
-  ESP.rtcUserMemoryWrite(0, (uint32_t*)&rtcData, sizeof(rtcData));
+  //ESP.rtcUserMemoryWrite(0, (uint32_t*)&rtcData, sizeof(rtcData));
 
   return true;
 }
@@ -165,7 +169,7 @@ void openSoftAP() {
     return;
 
   WiFi.mode(WIFI_AP_STA);
-  Serial.printf("Soft-AP %s %s%s", config.apssid.c_str(), (WiFi.softAP(config.apssid, config.appassword) ? "" : "not "), "established as");
+  Serial.printf("Soft-AP %s %s%s", config.apssid.c_str(), (WiFi.softAP(config.apssid.c_str(), config.appassword.c_str()) ? "" : "not "), "established as");
   delay(50);
   Serial.print("Soft-AP IP address = ");
   Serial.println(WiFi.softAPIP());
@@ -243,7 +247,7 @@ void openSoftAP() {
     server.sendHeader("Expires", " 0");
     server.send(200, "text/html", "Resetting...");
     delay(1000);
-    ESP.reset();
+    ESP.restart();
   });
   server.on("/save", [&]() {
     Serial.println("requesting /save");

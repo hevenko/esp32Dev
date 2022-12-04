@@ -23,8 +23,8 @@
 #define REST_H
 
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
-#include <ESP8266HTTPClient.h>
+
+#include <HTTPClient.h>
 #include <Arduino_JSON.h>
 
 // global WiFi client

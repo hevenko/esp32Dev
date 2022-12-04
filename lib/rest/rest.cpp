@@ -12,6 +12,7 @@
 #include <rest.h>
 #include <config.h>
 #include <misc.h>
+#include <wifi.h>
 
 WiFiClient client;
 HTTPClient http;
@@ -46,9 +47,9 @@ String httpRequest(String method, String resource, String pathParams, String que
   //Serial.printf("url: %s\n", url.c_str());
   if (body.length())
     Serial.printf("http body: %s\n", body.c_str());
-  http.begin(client, host, port, url);
+  http.begin(client, host + url);
   http.addHeader("Content-type", "application/json; charset=UTF-8");
-  http.addHeader("X-APIKEY", config.apikey);
+  http.addHeader("APIKEY", config.apikey);
 
   lastHttpCode = http.sendRequest(method.c_str(), body);
   Serial.printf("[HTTP] code: %d %s\n", lastHttpCode, http.errorToString(lastHttpCode).c_str());
@@ -88,7 +89,8 @@ String httpDELETE(String resource, String pathParams, String queryParams, String
 
 String httpRequest0(String method, String url, String body) {
   String host = "my-json-server.typicode.com";
-  if (client.connect(host, 80))
+
+  if (client.connect(host.c_str(), (uint16_t) ~((unsigned int) 80) , (uint32_t) ~((unsigned int) 1000)))
   {  
     String apiWritekey = "*************"; 
     String Data = apiWritekey;

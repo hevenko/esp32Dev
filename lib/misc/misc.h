@@ -138,4 +138,10 @@ String trimBoth(String s, String leading, String trailing);
  */
 String formatAsFloat(double value, byte decimals);
 
+/**
+ * 
+ * with courtesy of: https://github.com/espressif/arduino-esp32/
+*/
+uint32_t getChipId();
+
 #endif

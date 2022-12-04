@@ -51,9 +51,11 @@ String translate(std::map<int,String> m, int value) {
 void showESPInfo() {
   Serial.println("ESP info:");
   Serial.print("ESP.getChipId(): ");
-  Serial.println(ESP.getChipId());
-  Serial.print("ESP.getCoreVersion(): ");
-  Serial.println(ESP.getCoreVersion());
+  Serial.println(getChipId());
+  //Serial.print("ESP.getCoreVersion(): ");
+  //Serial.println(ESP.getCoreVersion());
+  Serial.print("ESP.getChipRevision(): ");
+  Serial.println(ESP.getChipRevision());
   Serial.print("ESP.getSdkVersion(): ");
   Serial.println(ESP.getSdkVersion());
   Serial.print("ESP.getCpuFreqMHz(): ");
@@ -62,19 +64,19 @@ void showESPInfo() {
   Serial.println(ESP.getSketchSize());
   Serial.print("ESP.getFreeSketchSpace(): ");
   Serial.println(ESP.getFreeSketchSpace());
-  Serial.print("ESP.getFlashChipId(): ");
-  Serial.println(ESP.getFlashChipId());
+  //Serial.print("ESP.getFlashChipId(): ");
+  //Serial.println(ESP.getFlashChipId());
   Serial.print("ESP.getFlashChipSize(): ");
   Serial.println(ESP.getFlashChipSize());
-  Serial.print("ESP.getFlashChipRealSize(): ");
-  Serial.println(ESP.getFlashChipRealSize());
+  //Serial.print("ESP.getFlashChipRealSize(): ");
+  //Serial.println(ESP.getFlashChipRealSize());
   Serial.print("ESP.getFlashChipSpeed(void): ");
   Serial.println(ESP.getFlashChipSpeed());
   Serial.print("ESP.getCycleCount(): ");
   Serial.println(ESP.getCycleCount());
-  Serial.print("ESP.getVcc(): ");
-  Serial.println(ESP.getVcc());
-  Serial.printf("ESP.deepSleepMax(): %lld\n", ESP.deepSleepMax());
+  //Serial.print("ESP.getVcc(): ");
+  //Serial.println(ESP.getVcc());
+  //Serial.printf("ESP.deepSleepMax(): %lld\n", ESP.deepSleepMax());
 }
 
 String ensureLeft(String s, String leading) {
@@ -126,4 +128,12 @@ String formatAsFloat(double value, byte decimals) {
   String format = "%." + String(decimals) + "f";
   sprintf(buffer, format.c_str(), value);
   return String(buffer);
+}
+
+uint32_t getChipId() {
+  uint32_t chipId = 0;
+	for(int i=0; i<17; i=i+8) {
+	  chipId |= ((ESP.getEfuseMac() >> (40 - i)) & 0xff) << i;
+	}
+  return chipId;
 }

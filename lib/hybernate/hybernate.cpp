@@ -9,15 +9,15 @@
  */
 
 #include <hybernate.h>
-#include <ESP8266WiFi.h>
 #include <config.h>
 #include <misc.h>
+#include <WiFi.h>
 
 void sleep() {
   Serial.println("sleeping...");
 	
 	WiFi.mode(WIFI_OFF);
-  WiFi.forceSleepBegin();
+  //WiFi.forceSleepBegin();
   yield();
 
 	/*
@@ -44,5 +44,5 @@ void sleep() {
 }
 
 void wake() {
-  WiFi.forceSleepWake(); // Wake up wifi-chip from sleep
+  //WiFi.forceSleepWake(); // Wake up wifi-chip from sleep
 }

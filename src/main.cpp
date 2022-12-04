@@ -11,7 +11,7 @@
  */
 
 #include <Arduino.h>
-#include <ESP8266WiFi.h>
+
 #include <DHT.h>
 #include <Arduino_JSON.h>
 #include <Adafruit_BMP085.h>
@@ -82,12 +82,12 @@ void setupConfig() {
   Serial.begin(115200);
   delayNonBlocking(10);
   while (!Serial) yield();
-  Serial.printf("\nESP_getChipId(): %d\n", ESP.getChipId());
+  Serial.printf("\nESP_getChipId(): %d\n", getChipId());
   
   Serial.println("setup");
   Serial.printf("\nBoard: %s\n\n", ARDUINO_BOARD);
-  String resetReason = ESP.getResetReason();
-  Serial.printf("Reset reason: %s\n", resetReason.c_str());
+  esp_sleep_wakeup_cause_t resetReason = esp_sleep_get_wakeup_cause();
+  Serial.printf("Reset reason: %s\n", resetReason);
 
   if(dhtSensor.handle == NULL) { // check if sensor is not already created (in case of wake from deep sleep)
     // handler, name, port, sensor type, count, minimum delay between sensor reading, internal use
@@ -105,14 +105,14 @@ void setupConfig() {
     Serial.println();
   }
 
-  if (resetReason != "Deep-Sleep Wake") {
+  if (resetReason != ESP_SLEEP_WAKEUP_TIMER) {
     wake();
     initConfig();
   }
 
   Serial.printf("WiFi.SSID(): %s\n", WiFi.SSID().c_str());
-  Serial.printf("ESP_getChipId(): %d\n", ESP.getChipId());
-  Serial.printf("ESP_getChipId(): %s\n", String(ESP.getChipId(), HEX).c_str());
+  Serial.printf("ESP_getChipId(): %d\n", getChipId());
+  Serial.printf("ESP_getChipId(): %s\n", String(getChipId(), HEX).c_str());
 
   Serial.printf("SSID: %s\n", WiFi.SSID().c_str());
   Serial.printf("Password: %s\n", WiFi.psk().c_str());

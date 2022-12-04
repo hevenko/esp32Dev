@@ -12,7 +12,7 @@
 
 #include <Arduino.h>
 #include <DNSServer.h>
-#include <ESP8266WebServer.h>
+#include <WebServer.h>
 #include <map>
 #include <hybernate.h>
 #include <web.h>
@@ -21,7 +21,7 @@
 extern bool bSoftAP;
 
 // global server for access point - serves client requests
-extern ESP8266WebServer server;
+extern WebServer server;
 
 // global dns server
 extern DNSServer dnsServer;
