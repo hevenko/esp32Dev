@@ -11,15 +11,17 @@
  */
 
 #include <Arduino.h>
-
 #include <DHT.h>
-#include <Arduino_JSON.h>
 #include <Adafruit_BMP085.h>
 #include <rest.h>
 #include <hybernate.h>
 #include <wifi.h>
 #include <misc.h>
 #include <config.h>
+#include <chrono>
+#include <cstdint>
+#include <iostream>
+#include <ctime>
 
 struct sSensor dhtSensor = { NULL, "", 0, 0, 0, 0, 0 };
 sSensor bmpSensor = { NULL, "", 0, 0, 0, 0, 0 };
@@ -33,6 +35,11 @@ struct sStation {
   float pressure;
   float altitude;
 } station;
+
+#define NTP_SERVER     "pool.ntp.org"
+#define UTC_OFFSET     0
+#define UTC_OFFSET_DST 0
+
 
 void readTHSensor() {
   waitSensorReading(dhtSensor);
@@ -59,14 +66,14 @@ void readBMPSensor() {
 
 void readSensors() {
   readTHSensor();
-  readBMPSensor();
+  //readBMPSensor();
 }
 
 void initConfig() {
   //showESPInfo();
   //showConfig();
-  //writeConfig();
-  readConfig();
+  writeConfig();
+  //readConfig();
   
   showConfig();
   //Serial.println();
@@ -82,16 +89,14 @@ void setupConfig() {
   Serial.begin(115200);
   delayNonBlocking(10);
   while (!Serial) yield();
-  Serial.printf("\nESP_getChipId(): %d\n", getChipId());
+  Serial.printf("\nESP_getChipId(): %d\n", ESP.getChipModel());
   
   Serial.println("setup");
   Serial.printf("\nBoard: %s\n\n", ARDUINO_BOARD);
-  esp_sleep_wakeup_cause_t resetReason = esp_sleep_get_wakeup_cause();
-  Serial.printf("Reset reason: %s\n", resetReason);
-
+  
   if(dhtSensor.handle == NULL) { // check if sensor is not already created (in case of wake from deep sleep)
     // handler, name, port, sensor type, count, minimum delay between sensor reading, internal use
-    dhtSensor = { NULL, "DHT11", 2, DHT11, 11, 1000, 0 };
+    dhtSensor = { NULL, "DHT11", 2, DHT11, 11, 0, 0 };
     dhtSensor.handle = new DHT(dhtSensor.pin, dhtSensor.type, dhtSensor.tag); // create sensor
     ((DHT*)dhtSensor.handle)->begin(); // activate sensor
     showSensor(dhtSensor);
@@ -105,14 +110,12 @@ void setupConfig() {
     Serial.println();
   }
 
-  if (resetReason != ESP_SLEEP_WAKEUP_TIMER) {
-    wake();
-    initConfig();
-  }
+  wake();
+  initConfig();
 
   Serial.printf("WiFi.SSID(): %s\n", WiFi.SSID().c_str());
-  Serial.printf("ESP_getChipId(): %d\n", getChipId());
-  Serial.printf("ESP_getChipId(): %s\n", String(getChipId(), HEX).c_str());
+  Serial.printf("ESP_getChipId(): %d\n", ESP.getChipModel());
+  Serial.printf("ESP_getChipId(): %s\n", String(ESP.getChipModel(), HEX).c_str());
 
   Serial.printf("SSID: %s\n", WiFi.SSID().c_str());
   Serial.printf("Password: %s\n", WiFi.psk().c_str());
@@ -133,69 +136,103 @@ void testJSON() {
   String json1 = "{\"temperature\":\"foo\",\"humidity\":\"bar\",\"time\":1,\"temperature2\":120}";
   Serial.printf("json1: %s\n", json1.c_str());
   
-  JSONVar myObject = JSON.parse(json1);
-  if (JSON.typeof(myObject) == "undefined") {
-    Serial.println("Parsing input failed!");
-    return;
-  }
+  // JSONVar myObject = JSON.parse(json1);
+  // if (JSON.typeof(myObject) == "undefined") {
+  //   Serial.println("Parsing input failed!");
+  //   return;
+  // }
   
   Serial.print("JSON.typeof(myObject) = ");
-  Serial.println(JSON.typeof(myObject)); // prints: object
+  // Serial.println(JSON.typeof(myObject)); // prints: object
   
   Serial.print("JSON.typeof(myObject[temperautre2]) = ");
-  Serial.println(JSON.typeof(myObject["temperature2"]));
+  // Serial.println(JSON.typeof(myObject["temperature2"]));
   
   Serial.print("myObject = ");
-  Serial.println(myObject);
+  // Serial.println(myObject);
 
-  if (myObject.hasOwnProperty("temperature")) {
-    Serial.print("myObject[\"temperature\"] = ");
-    Serial.println((const char*) myObject["temperature"]);
-  }
+  // if (myObject.hasOwnProperty("temperature")) {
+  //   Serial.print("myObject[\"temperature\"] = ");
+  //   Serial.println((const char*) myObject["temperature"]);
+  // }
   
-  if (myObject.hasOwnProperty("temperature2")) {
-    Serial.print("myObject[\"temperature2\"] = ");
-    Serial.println((int) myObject["temperature2"]);
-  }
+  // if (myObject.hasOwnProperty("temperature2")) {
+  //   Serial.print("myObject[\"temperature2\"] = ");
+  //   Serial.println((int) myObject["temperature2"]);
+  // }
 
-  JSONVar myObject2;
+  // JSONVar myObject2;
 
-  myObject2["hello"] = "world";
-  myObject2["true"] = true;
-  myObject2["x"] = 42;
-  myObject2["temperature"] = station.temperature;
-  myObject2["temperature-0"] = formatAsFloat(station.temperature, 0).toDouble();
-  myObject2["temperature-1"] = formatAsFloat(station.temperature, 1).toDouble();
-  myObject2["temperature-2"] = formatAsFloat(station.temperature, 2);
-  myObject2["temperature-9"] = formatAsFloat(station.temperature, 9).toDouble();
-  myObject2["humidity"] = station.humidity;
-  myObject2["temperature2"] = station.temperature2;
-  myObject2["pressure"] = station.pressure;
-  myObject2["altitude"] = station.altitude;
+  // myObject2["hello"] = "world";
+  // myObject2["true"] = true;
+  // myObject2["x"] = 42;
+  // myObject2["temperature"] = station.temperature;
+  // myObject2["temperature-0"] = formatAsFloat(station.temperature, 0).toDouble();
+  // myObject2["temperature-1"] = formatAsFloat(station.temperature, 1).toDouble();
+  // myObject2["temperature-2"] = formatAsFloat(station.temperature, 2);
+  // myObject2["temperature-9"] = formatAsFloat(station.temperature, 9).toDouble();
+  // myObject2["humidity"] = station.humidity;
+  // myObject2["temperature2"] = station.temperature2;
+  // myObject2["pressure"] = station.pressure;
+  // myObject2["altitude"] = station.altitude;
 
-  Serial.print("myObject.keys() = ");
-  Serial.println(myObject2.keys());
+  // Serial.print("myObject.keys() = ");
+  // Serial.println(myObject2.keys());
 
-  // JSON.stringify(myVar) can be used to convert the json var to a String
-  String jsonString = JSON.stringify(myObject2);
+  // // JSON.stringify(myVar) can be used to convert the json var to a String
+  // // String jsonString = JSON.stringify(myObject2);
 
-  Serial.print("JSON.stringify(myObject2) = ");
-  Serial.println(jsonString);
+  // Serial.print("JSON.stringify(myObject2) = ");
+  // Serial.println(jsonString);
+}
+
+void setTimezone(String timezone){
+  Serial.printf("  Setting Timezone to %s\n",timezone.c_str());
+  setenv("TZ", timezone.c_str(), 1);
+  tzset();
+}
+
+void readSensorAndSendData() {
+  readSensors();
+  time_t now;
+  time(&now);
+  char buf[sizeof "\"2011-10-08T07:07:09Z\""];
+  strftime(buf, sizeof buf, "\"%FT%TZ\"", gmtime(&now));
+  char buffer[200];
+  sprintf(buffer, "{\"temp\":%.0f,\"humidity\":%.0f,\"pressure\":%.0f,\"measured\":%s}", station.temperature, station.humidity, station.pressure, buf);
+  String data = String(buffer);
+  httpPOST("/full", "", "", data);
+
 }
 
 void setup() {
   setupConfig();
+  showConfig();
+  configTime(UTC_OFFSET, UTC_OFFSET_DST, NTP_SERVER);
+  setTimezone("CET-1CEST,M3.5.0,M10.5.0/3");
 }
 
 void loop() {
+  ///*
+  delay(4000);
+  readSensorAndSendData();
+  sleep();
+  //*/
+  /*
+  delay(4000);
+  readSensorAndSendData();
+  //*/
+
   //Serial.print("loop");
   //Serial.println(++counter);
   //delayNonBlocking(2000, handleWebServer);
   //handleSoftAPServer();
-  //delay(100);
+  //delay(4000);
   //handleSoftAPServer();
   //readSensors();
 
+  //httpPOST("/full", "", "", "{\"temp\": 24,	\"humidity\": 40,	\"measured\": \"2022-11-04T15:30:41.071Z\", \"gps\": [16.361, 46.312]}");
+  
   //testJSON();
 
   //httpGET("/typicode/demo/posts/1");
@@ -221,7 +258,7 @@ void loop() {
 
   Serial.println("regular post request");
   String data = String(buffer);
-  httpPOST("/posts", "", "", data);
+  httpPOST("/full", "", "", data);
   */
   //Serial.printf("WiFi.getTime(): %d\n", WiFi.getTime());
   // Serial.printf("Current WiFi Firmware: %s", WiFi.firmwareVersion());

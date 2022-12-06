@@ -20,7 +20,7 @@ struct sConfig config = {
   // credentials.apssid, credentials.appassword,
   5, "sec", "delayNB", calcDelayUS(), // 'none', 'delay', 'delayNB' (non blocking delay), 'deepsleep'
   //10, "sec", "deepsleep", calcDelayUS(), // 'none', 'delay', 'delayNB' (non blocking delay), 'deepsleep'
-  "http", trimRight("my-json-server.typicode.com", "/"), 80, ensureLeftTrimRight("/typicode/demo/", "/"),
+  "http", trimRight("http://airduino-server.herokuapp.com", "/"), 80, ensureLeftTrimRight("/api/v1/telemetry", "/"),
   "xefh-34lp-rw91-cb32",
   "Airduino", "1.0", "2.0", "3.0"
 };
